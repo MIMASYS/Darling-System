@@ -38,7 +38,7 @@ Mantenimiento
 - Ejecución de SFC (System File Checker)
 - Ejecución de DISM (Deployment Image Servicing)
 
-💾 Gestión de Discos
+Gestión de Discos
 - Estado detallado de discos y volúmenes
 - Quitar atributo "Solo Lectura" de USB
 - Quitar atributo "Oculto" de USB
