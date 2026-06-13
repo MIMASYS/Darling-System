@@ -3,17 +3,17 @@
 chcp 65001 | Out-Null
 
 # Version actual del script (debe coincidir con version.txt en GitHub)
-$Script:VersionActual = "3.0"
+$Script:VersionActual = "3.1"
 $Script:VersionURL = "https://raw.githubusercontent.com/MIMASYS/Darling-System/main/version.txt"
 $Script:ReleasesURL = "https://github.com/MIMASYS/Darling-System/releases"
 
-# Forzar TLS 1.2 para descargas modernas (critico para sitios actuales)
+# Forzar TLS 1.2 para descargas modernas
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 Clear-Host
 
 # ============================================================
-# FUNCIONES AUXILIARES (DEFINIDAS PRIMERO PARA QUE ESTEN DISPONIBLES)
+# FUNCIONES AUXILIARES
 # ============================================================
 
 function Pause-Kit { 
@@ -43,22 +43,16 @@ function Mostrar-Header {
     Write-Host "=========================================" -ForegroundColor Magenta
 }
 
-# *** FUNCION DE AUTOVERIFICACION - AHORA DEFINIDA ANTES DE SER LLAMADA ***
 function Verificar_Actualizacion {
     try {
-        # Descargar version remota desde GitHub
         $respuestaWeb = Invoke-WebRequest -Uri $Script:VersionURL -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
         $versionRemota = $respuestaWeb.Content.Trim()
-        
-        # Limpiar caracteres invisibles (BOM, saltos de linea, etc)
         $versionRemota = $versionRemota -replace '[^\d\.]', ''
         
-        # Validar que la version remota tenga formato valido
         if ([string]::IsNullOrWhiteSpace($versionRemota)) {
             return
         }
         
-        # Comparar versiones
         $verLocal = [version]$Script:VersionActual
         $verRemota = [version]$versionRemota
         
@@ -79,20 +73,18 @@ function Verificar_Actualizacion {
         }
     }
     catch {
-        # Si falla (sin internet, GitHub caido, etc), simplemente continuar
-        # No mostramos error para no molestar al usuario
+        # Si falla, continuar silenciosamente
     }
 }
 
-# *** AHORA SI LLAMAMOS LA FUNCION (YA ESTA DEFINIDA ARRIBA) ***
-# Verificar si hay actualizaciones disponibles
+# Verificar actualizaciones al iniciar
 Verificar_Actualizacion
 
-# Verificar si se ejecuta como Administrador
+# Verificar permisos de Administrador
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
-    Write-Host "ADVERTENCIA: Se recomienda ejecutar este script como Administrador." -ForegroundColor Yellow
-    Write-Host "Algunas opciones (SFC, DISM, Discos, BIOS/Boot, Optimizacion) requeriran permisos elevados." -ForegroundColor Yellow
+    Write-Host "ADVERTENCIA: Se recomienda ejecutar como Administrador." -ForegroundColor Yellow
+    Write-Host "Algunas opciones requeriran permisos elevados." -ForegroundColor Yellow
     Start-Sleep -Seconds 3
 }
 
@@ -146,7 +138,7 @@ function Seleccionar-Unidad {
 }
 
 # ============================================================
-# TABLA DE HERRAMIENTAS (Centralizada y escalable)
+# TABLA DE HERRAMIENTAS
 # ============================================================
 
 $Script:ToolsTable = @(
@@ -244,7 +236,7 @@ $Script:ToolsTable = @(
 )
 
 # ============================================================
-# FUNCION DE DESCARGA OPTIMIZADA
+# FUNCIONES DE DESCARGA
 # ============================================================
 
 function Descargar-Herramienta {
@@ -311,18 +303,18 @@ function Descargar-Herramienta {
             
             $archivoInfo = Get-Item $rutaCompleta
             if ($archivoInfo.Length -lt 1024) {
-                throw "El archivo descargado es demasiado pequeno (posible error)"
+                throw "El archivo descargado es demasiado pequeno"
             }
             
             $tamanoFinal = [math]::Round($archivoInfo.Length / 1MB, 2)
             Write-Host ""
-            Write-Host "[OK] Descarga completada exitosamente ($tamanoFinal MB)." -ForegroundColor Green
+            Write-Host "[OK] Descarga completada ($tamanoFinal MB)." -ForegroundColor Green
             Write-Host "  Ubicacion: $rutaCompleta" -ForegroundColor Cyan
             
             $descargado = $true
             break
         } catch {
-            Write-Host "[FALLO] Intento $intento fallo: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "[FALLO] Intento $intento: $($_.Exception.Message)" -ForegroundColor Red
             if (Test-Path $rutaCompleta) { Remove-Item $rutaCompleta -Force -ErrorAction SilentlyContinue }
             if ($intento -lt $maxReintentos) {
                 Write-Host "Reintentando en 3 segundos..." -ForegroundColor Yellow
@@ -334,8 +326,7 @@ function Descargar-Herramienta {
     if (-not $descargado) {
         Write-Host ""
         Write-Host "[ERROR] No se pudo descargar despues de $maxReintentos intentos." -ForegroundColor Red
-        Write-Host "  Posibles causas: URL obsoleta, servidor caido, bloqueo de red." -ForegroundColor Yellow
-        Write-Host "  URL original: $($Tool.URL)" -ForegroundColor Gray
+        Write-Host "  URL: $($Tool.URL)" -ForegroundColor Gray
     }
     
     Write-Host ""
