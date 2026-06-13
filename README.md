@@ -13,7 +13,7 @@ Co-authored by: Qwen (AI Dev)
 Copia y pega este comando en PowerShell como administrador para descargar e iniciar el script al instante:
 
 
-irm https://raw.githubusercontent.com/MIMASYS/Darling-System/main/DarlingSystem.ps1 | iex
+irm https://raw.githubusercontent.com/MIMASYS/Darling-System/main/Install.ps1 | iex
 
 ---
 
@@ -163,7 +163,7 @@ A partir de la versión 4.0, el proyecto utiliza una estructura modular profesio
 
 ### Opción 1: Instalación Rápida (Recomendada)
 
-irm https://raw.githubusercontent.com/MIMASYS/Darling-System/main/DarlingSystem.ps1 | iex
+irm https://raw.githubusercontent.com/MIMASYS/Darling-System/main/Install.ps1 | iex
 
 
 ### Opción 2: Descarga Manual
