@@ -1,22 +1,19 @@
-﻿# Forzar codificación UTF-8 en la consola
+﻿# Forzar codificacion UTF-8 en la consola
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 chcp 65001 | Out-Null
+
+# Version actual del script (debe coincidir con version.txt en GitHub)
+$Script:VersionActual = "3.0"
+$Script:VersionURL = "https://raw.githubusercontent.com/MIMASYS/Darling-System/main/version.txt"
+$Script:ReleasesURL = "https://github.com/MIMASYS/Darling-System/releases"
 
 # Forzar TLS 1.2 para descargas modernas (critico para sitios actuales)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 Clear-Host
 
-# Verificar si se ejecuta como Administrador
-$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-if (-not $isAdmin) {
-    Write-Host "ADVERTENCIA: Se recomienda ejecutar este script como Administrador." -ForegroundColor Yellow
-    Write-Host "Algunas opciones (SFC, DISM, Discos, BIOS/Boot, Optimizacion) requeriran permisos elevados." -ForegroundColor Yellow
-    Start-Sleep -Seconds 3
-}
-
 # ============================================================
-# FUNCIONES AUXILIARES
+# FUNCIONES AUXILIARES (DEFINIDAS PRIMERO PARA QUE ESTEN DISPONIBLES)
 # ============================================================
 
 function Pause-Kit { 
@@ -44,6 +41,59 @@ function Mostrar-Header {
     Write-Host "           Dirty and dummy system" -ForegroundColor Magenta
     Write-Host "          Created by: MIMASYS. Chu." -ForegroundColor Magenta
     Write-Host "=========================================" -ForegroundColor Magenta
+}
+
+# *** FUNCION DE AUTOVERIFICACION - AHORA DEFINIDA ANTES DE SER LLAMADA ***
+function Verificar_Actualizacion {
+    try {
+        # Descargar version remota desde GitHub
+        $respuestaWeb = Invoke-WebRequest -Uri $Script:VersionURL -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
+        $versionRemota = $respuestaWeb.Content.Trim()
+        
+        # Limpiar caracteres invisibles (BOM, saltos de linea, etc)
+        $versionRemota = $versionRemota -replace '[^\d\.]', ''
+        
+        # Validar que la version remota tenga formato valido
+        if ([string]::IsNullOrWhiteSpace($versionRemota)) {
+            return
+        }
+        
+        # Comparar versiones
+        $verLocal = [version]$Script:VersionActual
+        $verRemota = [version]$versionRemota
+        
+        if ($verRemota -gt $verLocal) {
+            Write-Host ""
+            Write-Host "=====================================================" -ForegroundColor Yellow
+            Write-Host "  NUEVA VERSION DISPONIBLE: v$versionRemota" -ForegroundColor Yellow
+            Write-Host "  Tu version actual: v$Script:VersionActual" -ForegroundColor White
+            Write-Host "  Descarga la nueva version en:" -ForegroundColor White
+            Write-Host "  $Script:ReleasesURL" -ForegroundColor Cyan
+            Write-Host "=====================================================" -ForegroundColor Yellow
+            Write-Host ""
+            
+            $abrir = Read-Host "Deseas abrir la pagina de descargas? (s/n)"
+            if ($abrir -in @('s', 'S', 'si', 'Si', 'SI')) {
+                Start-Process $Script:ReleasesURL
+            }
+        }
+    }
+    catch {
+        # Si falla (sin internet, GitHub caido, etc), simplemente continuar
+        # No mostramos error para no molestar al usuario
+    }
+}
+
+# *** AHORA SI LLAMAMOS LA FUNCION (YA ESTA DEFINIDA ARRIBA) ***
+# Verificar si hay actualizaciones disponibles
+Verificar_Actualizacion
+
+# Verificar si se ejecuta como Administrador
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+if (-not $isAdmin) {
+    Write-Host "ADVERTENCIA: Se recomienda ejecutar este script como Administrador." -ForegroundColor Yellow
+    Write-Host "Algunas opciones (SFC, DISM, Discos, BIOS/Boot, Optimizacion) requeriran permisos elevados." -ForegroundColor Yellow
+    Start-Sleep -Seconds 3
 }
 
 function Test-ConexionInternet {
@@ -204,7 +254,6 @@ function Descargar-Herramienta {
         [string]$CarpetaDestino = $null
     )
     
-    # Si no se especifica carpeta, preguntar al usuario
     if (-not $CarpetaDestino) {
         $unidad = Seleccionar-Unidad
         if (-not $unidad) { return }
@@ -225,7 +274,6 @@ function Descargar-Herramienta {
     Write-Host "  Destino     : $CarpetaDestino" -ForegroundColor White
     Write-Host ""
     
-    # Verificar conexion antes de descargar
     if (-not (Test-ConexionInternet)) {
         Write-Host "[ERROR] No hay conexion a Internet." -ForegroundColor Red
         Pause-Kit
@@ -238,8 +286,8 @@ function Descargar-Herramienta {
         $existente = Get-Item $rutaCompleta
         $tamanoMB = [math]::Round($existente.Length / 1MB, 2)
         Write-Host "[INFO] El archivo ya existe ($tamanoMB MB)." -ForegroundColor Yellow
-        if (-not (Confirmar-Accion "¿Deseas re-descargarlo?")) {
-            if (Confirmar-Accion "¿Abrir carpeta de descargas?") {
+        if (-not (Confirmar-Accion "Deseas re-descargarlo?")) {
+            if (Confirmar-Accion "Abrir carpeta de descargas?") {
                 Start-Process explorer.exe $CarpetaDestino
             }
             Pause-Kit
@@ -258,14 +306,12 @@ function Descargar-Herramienta {
         try {
             Write-Host "Intento $intento de $maxReintentos..." -ForegroundColor Gray
             
-            # Metodo 1: Invoke-WebRequest con progreso
             $ProgressPreference = 'Continue'
             Invoke-WebRequest -Uri $Tool.URL -OutFile $rutaCompleta -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
             
-            # Validar que el archivo no esté vacío
             $archivoInfo = Get-Item $rutaCompleta
             if ($archivoInfo.Length -lt 1024) {
-                throw "El archivo descargado es demasiado pequeño (posible error)"
+                throw "El archivo descargado es demasiado pequeno (posible error)"
             }
             
             $tamanoFinal = [math]::Round($archivoInfo.Length / 1MB, 2)
@@ -276,7 +322,7 @@ function Descargar-Herramienta {
             $descargado = $true
             break
         } catch {
-            Write-Host "[FALLO] Intento $intento falló: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "[FALLO] Intento $intento fallo: $($_.Exception.Message)" -ForegroundColor Red
             if (Test-Path $rutaCompleta) { Remove-Item $rutaCompleta -Force -ErrorAction SilentlyContinue }
             if ($intento -lt $maxReintentos) {
                 Write-Host "Reintentando en 3 segundos..." -ForegroundColor Yellow
@@ -293,7 +339,7 @@ function Descargar-Herramienta {
     }
     
     Write-Host ""
-    if (Confirmar-Accion "¿Abrir carpeta de descargas?") {
+    if (Confirmar-Accion "Abrir carpeta de descargas?") {
         Start-Process explorer.exe $CarpetaDestino
     }
     
@@ -316,13 +362,13 @@ function Descargar-CategoriaCompleta {
     Write-Host "Descarga Masiva: $Categoria" -ForegroundColor Cyan
     Write-Host ("=" * 45) -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "Se descargarán $($herramientas.Count) herramientas:" -ForegroundColor Yellow
+    Write-Host "Se descargaran $($herramientas.Count) herramientas:" -ForegroundColor Yellow
     foreach ($tool in $herramientas) {
         Write-Host "  - $($tool.Nombre)" -ForegroundColor White
     }
     Write-Host ""
     
-    if (-not (Confirmar-Accion "¿Proceder con la descarga masiva?")) { return }
+    if (-not (Confirmar-Accion "Proceder con la descarga masiva?")) { return }
     
     $i = 1
     foreach ($tool in $herramientas) {
@@ -346,7 +392,7 @@ function Descargar-CategoriaCompleta {
     Write-Host ""
     Write-Host "[OK] Descarga masiva completada." -ForegroundColor Green
     
-    if (Confirmar-Accion "¿Abrir carpeta de descargas?") {
+    if (Confirmar-Accion "Abrir carpeta de descargas?") {
         Start-Process explorer.exe $carpeta
     }
     
@@ -744,7 +790,7 @@ function Discos-Limpiar {
     
     $num = Read-Host "Escribe el NUMERO del disco a LIMPIAR"
     if ($num -match '^\d+$') {
-        if (Confirmar-Accion "¿Estas SEGURO de borrar TODO el disco $num? Esta accion es irreversible") {
+        if (Confirmar-Accion "Estas SEGURO de borrar TODO el disco $num? Esta accion es irreversible") {
             Write-Host "Limpiando disco $num..." -ForegroundColor Yellow
             Clear-Disk -Number $num -RemoveData -RemoveOEM -Confirm:$false -ErrorAction SilentlyContinue
             Write-Host "[OK] Disco limpiado y convertido en espacio no asignado." -ForegroundColor Green
@@ -765,7 +811,7 @@ function Discos-Formatear {
     
     $letter = Read-Host "Escribe la LETRA de la unidad a formatear (ej: E)"
     if ($letter -match '^[a-zA-Z]$') {
-        if (Confirmar-Accion "¿Formatear la unidad $letter`:? Se perderan todos los archivos") {
+        if (Confirmar-Accion "Formatear la unidad $letter`:? Se perderan todos los archivos") {
             Write-Host "Formateando $letter`:... " -ForegroundColor Yellow
             Format-Volume -DriveLetter $letter -FileSystem NTFS -NewFileSystemLabel "DarlingUSB" -Confirm:$false -ErrorAction SilentlyContinue
             Write-Host "[OK] Unidad $letter` formateada correctamente." -ForegroundColor Green
@@ -792,7 +838,7 @@ function Boot-ReiniciarBIOS {
         Write-Host "[ERROR] Tu sistema parece usar BIOS Legacy (no UEFI)." -ForegroundColor Red
         Write-Host "  El reinicio directo a BIOS solo funciona en sistemas UEFI." -ForegroundColor Red
         Write-Host ""
-        if (Confirmar-Accion "¿Reiniciar de todas formas? (presiona F2 o SUPR rapidamente)") {
+        if (Confirmar-Accion "Reiniciar de todas formas? (presiona F2 o SUPR rapidamente)") {
             Write-Host "Reiniciando en 5 segundos..." -ForegroundColor Yellow
             Start-Sleep -Seconds 5
             shutdown.exe /r /f /t 0
@@ -804,7 +850,7 @@ function Boot-ReiniciarBIOS {
     Write-Host "Guarda tu trabajo antes de continuar." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Reiniciar ahora y entrar a la BIOS?") {
+    if (Confirmar-Accion "Reiniciar ahora y entrar a la BIOS?") {
         Write-Host "Reiniciando en 3 segundos..." -ForegroundColor Yellow
         Start-Sleep -Seconds 3
         shutdown.exe /r /fw /f /t 0
@@ -832,7 +878,7 @@ function Boot-AdvancedStartup {
     Write-Host "Guarda tu trabajo antes de continuar." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Reiniciar ahora en el Menu de Arranque Avanzado?") {
+    if (Confirmar-Accion "Reiniciar ahora en el Menu de Arranque Avanzado?") {
         Write-Host "Reiniciando en 3 segundos..." -ForegroundColor Yellow
         Start-Sleep -Seconds 3
         shutdown.exe /r /o /f /t 0
@@ -866,7 +912,7 @@ function Boot-ModoSeguro {
         Write-Host "  bcdedit /deletevalue {current} safeboot" -ForegroundColor Cyan
         Write-Host ""
         
-        if (Confirmar-Accion "¿Configurar Modo Seguro y reiniciar?") {
+        if (Confirmar-Accion "Configurar Modo Seguro y reiniciar?") {
             Write-Host "Configurando Modo Seguro..." -ForegroundColor Yellow
             bcdedit /set {current} safeboot $safeBootValue | Out-Null
             Write-Host "Reiniciando en 3 segundos..." -ForegroundColor Yellow
@@ -892,7 +938,7 @@ function Opt-DesactivarCopilot {
     Write-Host "Esta opcion desactivara Copilot de Windows 11 mediante el registro." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desactivar Copilot?") {
+    if (Confirmar-Accion "Desactivar Copilot?") {
         try {
             $path = "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot"
             if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
@@ -920,7 +966,7 @@ function Opt-DesactivarWidgets {
     Write-Host "Esta opcion ocultara el boton de Widgets de la barra de tareas." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desactivar Widgets?") {
+    if (Confirmar-Accion "Desactivar Widgets?") {
         try {
             $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
             Set-ItemProperty -Path $path -Name "TaskbarDa" -Value 0 -Type DWord -Force
@@ -943,7 +989,7 @@ function Opt-DesactivarPhoneLink {
     Write-Host "Esta opcion desinstalara la aplicacion Phone Link (Tu Telefono)." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desinstalar Phone Link?") {
+    if (Confirmar-Accion "Desinstalar Phone Link?") {
         try {
             Get-AppxPackage *Microsoft.YourPhone* | Remove-AppxPackage -ErrorAction SilentlyContinue
             Write-Host "[OK] Phone Link desinstalado correctamente." -ForegroundColor Green
@@ -963,7 +1009,7 @@ function Opt-DesactivarXboxGameBar {
     Write-Host "Esta opcion desactivara Xbox Game Bar y Game DVR." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desactivar Xbox Game Bar?") {
+    if (Confirmar-Accion "Desactivar Xbox Game Bar?") {
         try {
             $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR"
             if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
@@ -989,7 +1035,7 @@ function Opt-DesactivarTips {
     Write-Host "Esta opcion desactivara las sugerencias y tips de Windows." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desactivar Tips y Sugerencias?") {
+    if (Confirmar-Accion "Desactivar Tips y Sugerencias?") {
         try {
             $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
             Set-ItemProperty -Path $path -Name "SubscribedContent-338389Enabled" -Value 0 -Type DWord -Force
@@ -1013,7 +1059,7 @@ function Opt-DesactivarPublicidad {
     Write-Host "Esta opcion desactivara la publicidad y sugerencias de Windows." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desactivar Publicidad del Sistema?") {
+    if (Confirmar-Accion "Desactivar Publicidad del Sistema?") {
         try {
             $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
             Set-ItemProperty -Path $path -Name "ContentDeliveryAllowed" -Value 0 -Type DWord -Force
@@ -1044,17 +1090,11 @@ function Opt-DesactivarAppsPreinstaladas {
     Write-Host ""
     
     Write-Host "Esta opcion desinstalara aplicaciones bloatware comunes:" -ForegroundColor Yellow
-    Write-Host "  - Candy Crush"
-    Write-Host "  - Disney+"
-    Write-Host "  - Spotify"
-    Write-Host "  - TikTok"
-    Write-Host "  - Instagram"
-    Write-Host "  - Netflix"
-    Write-Host "  - WhatsApp"
-    Write-Host "  - Adobe Express"
+    Write-Host "  - Candy Crush, Disney+, Spotify, TikTok"
+    Write-Host "  - Instagram, Netflix, WhatsApp, Adobe Express"
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desinstalar apps preinstaladas no criticas?") {
+    if (Confirmar-Accion "Desinstalar apps preinstaladas no criticas?") {
         $appsToRemove = @(
             "*CandyCrush*","*Disney*","*Spotify*","*TikTok*",
             "*Instagram*","*Netflix*","*WhatsApp*","*AdobeExpress*",
@@ -1088,7 +1128,7 @@ function Opt-DesactivarPersonalizacionCloud {
     Write-Host "Esta opcion desactivara la sincronizacion de configuracion y temas de Microsoft." -ForegroundColor Yellow
     Write-Host ""
     
-    if (Confirmar-Accion "¿Desactivar Personalizacion en la Nube?") {
+    if (Confirmar-Accion "Desactivar Personalizacion en la Nube?") {
         try {
             $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\CloudContent"
             if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
@@ -1121,7 +1161,7 @@ function Opt-TodasLasOptimizaciones {
     Write-Host "ADVERTENCIA: Esta accion no se puede deshacer facilmente." -ForegroundColor Red
     Write-Host ""
     
-    if (-not (Confirmar-Accion "¿Aplicar TODAS las optimizaciones? (s/n)")) { return }
+    if (-not (Confirmar-Accion "Aplicar TODAS las optimizaciones? (s/n)")) { return }
     
     Write-Host "Aplicando optimizaciones..." -ForegroundColor Yellow
     Write-Host ""
@@ -1312,7 +1352,7 @@ function SubMenu-Discos {
         Write-Host " 3  - Listar volumenes y letras"
         Write-Host " 4  - Quitar 'Solo Lectura' de USB"
         Write-Host " 5  - Quitar atributo 'Oculto' de USB"
-        Write-Host " 6  - Limpiar disco (¡PELIGRO! Borra todo)"
+        Write-Host " 6  - Limpiar disco (PELIGRO! Borra todo)"
         Write-Host " 7  - Formatear volumen (NTFS Rapido)"
         Write-Host " 0  - Volver al menu principal"
         Write-Host ""
@@ -1351,9 +1391,9 @@ function SubMenu-Boot {
         $opcion = Read-Host "Selecciona una opcion"
 
         switch ($opcion) {
-            "1" { if (Confirmar-Accion "¿Reiniciar y entrar a la BIOS/UEFI?") { Boot-ReiniciarBIOS } }
-            "2" { if (Confirmar-Accion "¿Reiniciar en el Menu de Arranque Avanzado?") { Boot-AdvancedStartup } }
-            "3" { if (Confirmar-Accion "¿Reiniciar en Modo Seguro?") { Boot-ModoSeguro } }
+            "1" { if (Confirmar-Accion "Reiniciar y entrar a la BIOS/UEFI?") { Boot-ReiniciarBIOS } }
+            "2" { if (Confirmar-Accion "Reiniciar en el Menu de Arranque Avanzado?") { Boot-AdvancedStartup } }
+            "3" { if (Confirmar-Accion "Reiniciar en Modo Seguro?") { Boot-ModoSeguro } }
             "0" { return }
             default {
                 Write-Host "Opcion invalida." -ForegroundColor Red
@@ -1443,7 +1483,6 @@ function SubMenu-Descargas {
         $opcion = Read-Host "Selecciona una opcion"
 
         switch ($opcion) {
-            # Descargas individuales (índices de la tabla 0-12)
             {$_ -match '^[1-9]$' -or $_ -match '^1[0-3]$'} { 
                 $idx = [int]$opcion - 1
                 if ($idx -ge 0 -and $idx -lt $Script:ToolsTable.Count) {
@@ -1458,7 +1497,7 @@ function SubMenu-Descargas {
             "16" { Descargar-CategoriaCompleta -Categoria "Utilidades" }
             "17" { Descargar-CategoriaCompleta -Categoria "Red" }
             "18" { 
-                if (Confirmar-Accion "¿Descargar TODAS las herramientas (13 apps)?") {
+                if (Confirmar-Accion "Descargar TODAS las herramientas (13 apps)?") {
                     $categorias = @("Diagnostico","Sysinternals","Utilidades","Red")
                     foreach ($cat in $categorias) {
                         Descargar-CategoriaCompleta -Categoria $cat
