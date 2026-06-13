@@ -314,9 +314,7 @@ function Descargar-Herramienta {
             $descargado = $true
             break
         } catch {
-            Write-Host "[FALLO] Intento $intento: $($_.Exception.Message)" -ForegroundColor Red
-            if (Test-Path $rutaCompleta) { Remove-Item $rutaCompleta -Force -ErrorAction SilentlyContinue }
-            if ($intento -lt $maxReintentos) {
+Write-Host "[FALLO] Intento ${intento}: $($_.Exception.Message)" -ForegroundColor Red            if ($intento -lt $maxReintentos) {
                 Write-Host "Reintentando en 3 segundos..." -ForegroundColor Yellow
                 Start-Sleep -Seconds 3
             }
