@@ -6,6 +6,8 @@
 Created by: MIMASYS. Chu.
 
 ---
+Copia y pega el comando en PowerShell como administrador para descargar e iniciar el script al instante.
+irm https://raw.githubusercontent.com/MIMASYS/Darling-System/main/DarlingSystemv.ps1 | iex
 
 Darling System es un kit de herramientas todo-en-uno para Windows 11/10, desarrollado en PowerShell. Permite gestionar, diagnosticar, optimizar y mantener el sistema operativo desde una interfaz de menú intuitiva.
 
