@@ -30,6 +30,7 @@ $modulos = @(
     "10-Tecnico.ps1",
     "11-Winget.ps1",
     "12-Reportes.ps1"
+    "13-Seguridad.ps1"
 )
 
 foreach ($modulo in $modulos) {
@@ -66,49 +67,82 @@ if (-not $isAdmin) {
 }
 
 # ============================================================
-# MENU PRINCIPAL
+# MENU PRINCIPAL (ESTILO PROFESIONAL CON CATEGORIAS)
 # ============================================================
 
 while ($true) {
     Mostrar-Header
     Write-Host ""
-    Write-Host " 1  - Utilidades del sistema"
-    Write-Host " 2  - Herramientas de gestion"
-    Write-Host " 3  - Mantenimiento"
-    Write-Host " 4  - Gestion de Discos"
-    Write-Host " 5  - Opciones de Arranque (Boot/BIOS)"
-    Write-Host " 6  - Optimizacion de Windows 11"
-    Write-Host " 7  - Descarga de Herramientas"
-    Write-Host " 8  - Perifericos y Hardware"
-    Write-Host " 9  - Reparacion Avanzada de Red"
-    Write-Host " 10 - Modo Tecnico"
-    Write-Host " 11 - Instalacion con Winget"
-    Write-Host " 12 - Reporte HTML avanzado"
-    Write-Host " 13 - Reporte TXT al Escritorio"
-    Write-Host " 0  - Salir"
+    
+    # CATEGORIA 1: DIAGNOSTICO
+    Write-Host "  ┌─ DIAGNOSTICO Y ANALISIS " -ForegroundColor Cyan
+    Write-Host "  │  1  - Utilidades del sistema" -ForegroundColor White
+    Write-Host "  │  2  - Perifericos y Hardware" -ForegroundColor White
+    Write-Host "  │  3  - Modo Tecnico" -ForegroundColor White
+    Write-Host "  └────────────────────────────────────" -ForegroundColor DarkGray
     Write-Host ""
-    $opcion = Read-Host "Selecciona una opcion"
+    
+    # CATEGORIA 2: MANTENIMIENTO
+    Write-Host "  ┌─ MANTENIMIENTO Y REPARACION " -ForegroundColor Yellow
+    Write-Host "  │  4  - Herramientas de gestion" -ForegroundColor White
+    Write-Host "  │  5  - Mantenimiento del sistema" -ForegroundColor White
+    Write-Host "  │  6  - Gestion de Discos" -ForegroundColor White
+    Write-Host "  │  7  - Reparacion Avanzada de Red" -ForegroundColor White
+    Write-Host "  └────────────────────────────────────" -ForegroundColor DarkGray
+    Write-Host ""
+    
+    # CATEGORIA 3: CONFIGURACION
+    Write-Host "  ┌─ CONFIGURACION Y OPTIMIZACION " -ForegroundColor Green
+    Write-Host "  │  8  - Opciones de Arranque (Boot/BIOS)" -ForegroundColor White
+    Write-Host "  │  9  - Optimizacion de Windows 11" -ForegroundColor White
+    Write-Host "  │  10 - SEGURIDAD DEL SISTEMA" -ForegroundColor Red -BackgroundColor Black
+    Write-Host "  └────────────────────────────────────" -ForegroundColor DarkGray
+    Write-Host ""
+    
+    # CATEGORIA 4: HERRAMIENTAS Y REPORTES
+    Write-Host "  ┌─ HERRAMIENTAS Y REPORTES " -ForegroundColor Magenta
+    Write-Host "  │  11 - Descarga de Herramientas" -ForegroundColor White
+    Write-Host "  │  12 - Instalacion con Winget" -ForegroundColor White
+    Write-Host "  │  13 - Reporte HTML avanzado" -ForegroundColor White
+    Write-Host "  │  14 - Reporte TXT al Escritorio" -ForegroundColor White
+    Write-Host "  └────────────────────────────────────" -ForegroundColor DarkGray
+    Write-Host ""
+    
+    # SALIR
+    Write-Host "  0  - Salir de Darling System" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Host "═══════════════════════════════════════════════════════════════" -ForegroundColor DarkGray
+    
+    $opcion = Read-Host "  Selecciona una opcion"
+    
     switch ($opcion) {
         "1" { SubMenu-Utilidades }
-        "2" { SubMenu-Herramientas }
-        "3" { SubMenu-Mantenimiento }
-        "4" { SubMenu-Discos }
-        "5" { SubMenu-Boot }
-        "6" { SubMenu-Optimizacion }
-        "7" { SubMenu-Descargas }
-        "8" { SubMenu-Perifericos }
-        "9" { SubMenu-Red }
-        "10" { SubMenu-Tecnico }
-        "11" { SubMenu-Winget }
-        "12" { Generar-ReporteHTML }
-        "13" { Generar-Reporte }
-        "777" { Mostrar-ASCII-Art }        
+        "2" { SubMenu-Perifericos }
+        "3" { SubMenu-Tecnico }
+        "4" { SubMenu-Herramientas }
+        "5" { SubMenu-Mantenimiento }
+        "6" { SubMenu-Discos }
+        "7" { SubMenu-Red }
+        "8" { SubMenu-Boot }
+        "9" { SubMenu-Optimizacion }
+        "10" { SubMenu-Seguridad }
+        "11" { SubMenu-Descargas }
+        "12" { SubMenu-Winget }
+        "13" { Generar-ReporteHTML }
+        "14" { Generar-Reporte }
+        "777" { Mostrar-ASCII-Art }
         "0" {
             Clear-Host
-            Write-Host "Saliendo de Darling System. Hasta luego!" -ForegroundColor Green
-            Start-Sleep -Seconds 1
+            Write-Host ""
+            Write-Host "  ❤ Gracias por usar Darling System ❤" -ForegroundColor Magenta
+            Write-Host "  Created by MIMASYS. Chu. & Qwen" -ForegroundColor Gray
+            Write-Host ""
+            Start-Sleep -Seconds 2
             break
         }
-        default { Write-Host "Opcion invalida." -ForegroundColor Red; Start-Sleep -Seconds 2 }
+        default { 
+            Write-Host "  Opcion invalida. Por favor selecciona un numero del 0 al 14." -ForegroundColor Red
+            Start-Sleep -Seconds 2 
+        }
     }
 }

@@ -1,42 +1,18 @@
-﻿# ============================================================
-# MODULO 01: UTILIDADES DEL SISTEMA
-# Version 4.1 - Expandido y optimizado
-# ============================================================
-
+﻿
 # ============================================================
 # FUNCIONES AUXILIARES REUTILIZABLES
 # ============================================================
 
-function Get-SistemaInfo {
-    return Get-CimInstance Win32_OperatingSystem
-}
-
-function Get-CPUInfo {
-    return Get-CimInstance Win32_Processor | Select-Object -First 1
-}
-
-function Get-RAMInfo {
-    return Get-CimInstance Win32_PhysicalMemory
-}
-
-function Get-GPUInfo {
-    return Get-CimInstance Win32_VideoController
-}
-
-function Get-DiscoInfo {
-    return Get-CimInstance Win32_DiskDrive
-}
-
-function Get-PlacaBaseInfo {
-    return Get-CimInstance Win32_BaseBoard
-}
-
-function Get-BIOSInfo {
-    return Get-CimInstance Win32_BIOS
-}
+function Get-SistemaInfo { return Get-CimInstance Win32_OperatingSystem }
+function Get-CPUInfo { return Get-CimInstance Win32_Processor | Select-Object -First 1 }
+function Get-RAMInfo { return Get-CimInstance Win32_PhysicalMemory }
+function Get-GPUInfo { return Get-CimInstance Win32_VideoController }
+function Get-DiscoInfo { return Get-CimInstance Win32_DiskDrive }
+function Get-PlacaBaseInfo { return Get-CimInstance Win32_BaseBoard }
+function Get-BIOSInfo { return Get-CimInstance Win32_BIOS }
 
 # ============================================================
-# FUNCIONES EXISTENTES (OPTIMIZADAS)
+# FUNCIONES DE UTILIDADES
 # ============================================================
 
 function Util-InfoSistema {
@@ -258,10 +234,6 @@ function Util-EventosRecientes {
     Pause-Kit
 }
 
-# ============================================================
-# FUNCIONES NUEVAS
-# ============================================================
-
 function Util-PlacaBaseBIOS {
     Clear-Host
     Write-Host "Informacion de Placa Base y BIOS" -ForegroundColor Cyan
@@ -284,7 +256,6 @@ function Util-PlacaBaseBIOS {
     Write-Host "  Serial        : $($bios.SerialNumber)"
     Write-Host ""
     
-    # Detectar modo UEFI vs Legacy
     try {
         $bcdedit = bcdedit /enum '{current}' 2>&1
         $isUEFI = $bcdedit -match "path.*\.efi"
@@ -309,25 +280,18 @@ function Util-IdentidadSistema {
     Write-Host "  Dominio            : $($env:USERDOMAIN)"
     Write-Host ""
     
-    # Obtener SID del usuario actual
     try {
         $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-        Write-Host "[SEGURIDAD]" -ForegroundColor Yellow
+        Write-Host "[SEGURIDAD BASICA]" -ForegroundColor Yellow
         Write-Host "  SID del usuario    : $($currentUser.User.Value)"
         Write-Host "  Es administrador   : $(if ($currentUser.Groups -match 'S-1-5-32-544') { 'Si' } else { 'No' })"
         Write-Host ""
-    } catch {
-        Write-Host "[SEGURIDAD]" -ForegroundColor Yellow
-        Write-Host "  No se pudo obtener informacion de seguridad" -ForegroundColor Red
-        Write-Host ""
-    }
+    } catch { }
     
-    # Tipo de sistema
     $cs = Get-CimInstance Win32_ComputerSystem
     Write-Host "[TIPO DE SISTEMA]" -ForegroundColor Yellow
     Write-Host "  Fabricante         : $($cs.Manufacturer)"
     Write-Host "  Modelo             : $($cs.Model)"
-    Write-Host "  Tipo de dominio    : $($cs.DomainRole)"
     Write-Host ""
     Pause-Kit
 }
@@ -346,30 +310,14 @@ function Util-DetectarVirtualizacion {
     Write-Host "  Modelo        : $($cs.Model)"
     Write-Host ""
     
-    # Detectar tipo de virtualización
     $esVirtual = $false
     $tipoVirtual = "Sistema físico (no virtualizado)"
     
-    if ($cs.Manufacturer -match "VMware") {
-        $esVirtual = $true
-        $tipoVirtual = "VMware"
-    }
-    elseif ($cs.Manufacturer -match "VirtualBox") {
-        $esVirtual = $true
-        $tipoVirtual = "Oracle VirtualBox"
-    }
-    elseif ($cs.Manufacturer -match "QEMU") {
-        $esVirtual = $true
-        $tipoVirtual = "QEMU/KVM"
-    }
-    elseif ($cs.Model -match "Virtual Machine") {
-        $esVirtual = $true
-        $tipoVirtual = "Hyper-V o Microsoft Virtual"
-    }
-    elseif ($bios.Manufacturer -match "innotek") {
-        $esVirtual = $true
-        $tipoVirtual = "VirtualBox"
-    }
+    if ($cs.Manufacturer -match "VMware") { $esVirtual = $true; $tipoVirtual = "VMware" }
+    elseif ($cs.Manufacturer -match "VirtualBox") { $esVirtual = $true; $tipoVirtual = "Oracle VirtualBox" }
+    elseif ($cs.Manufacturer -match "QEMU") { $esVirtual = $true; $tipoVirtual = "QEMU/KVM" }
+    elseif ($cs.Model -match "Virtual Machine") { $esVirtual = $true; $tipoVirtual = "Hyper-V o Microsoft Virtual" }
+    elseif ($bios.Manufacturer -match "innotek") { $esVirtual = $true; $tipoVirtual = "VirtualBox" }
     
     Write-Host "[RESULTADO]" -ForegroundColor Yellow
     if ($esVirtual) {
@@ -377,31 +325,6 @@ function Util-DetectarVirtualizacion {
         Write-Host "  Tipo          : $tipoVirtual" -ForegroundColor Yellow
     } else {
         Write-Host "  Estado        : SISTEMA FISICO" -ForegroundColor Green
-    }
-    Write-Host ""
-    Pause-Kit
-}
-
-function Util-SecureBoot {
-    Clear-Host
-    Write-Host "Estado de Secure Boot" -ForegroundColor Cyan
-    Write-Host "=====================" -ForegroundColor Cyan
-    Write-Host ""
-    
-    try {
-        $secureBoot = Confirm-SecureBootUEFI
-        Write-Host "[SECURE BOOT]" -ForegroundColor Yellow
-        if ($secureBoot) {
-            Write-Host "  Estado        : ACTIVADO" -ForegroundColor Green
-            Write-Host "  Proteccion    : Tu sistema esta protegido contra bootkits" -ForegroundColor Green
-        } else {
-            Write-Host "  Estado        : DESACTIVADO" -ForegroundColor Red
-            Write-Host "  Advertencia   : Tu sistema puede ser vulnerable" -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host "[SECURE BOOT]" -ForegroundColor Yellow
-        Write-Host "  Estado        : NO DISPONIBLE" -ForegroundColor Yellow
-        Write-Host "  Nota          : Secure Boot solo esta disponible en sistemas UEFI" -ForegroundColor Gray
     }
     Write-Host ""
     Pause-Kit
@@ -424,13 +347,10 @@ function Util-TipoDisco {
             default { $disco.MediaType }
         }
         
-        # Intentar detectar SSD vs HDD
         $tipoReal = "Desconocido"
         try {
             $physicalDisk = Get-PhysicalDisk | Where-Object { $_.SerialNumber -eq $disco.SerialNumber }
-            if ($physicalDisk) {
-                $tipoReal = $physicalDisk.MediaType
-            }
+            if ($physicalDisk) { $tipoReal = $physicalDisk.MediaType }
         } catch { }
         
         Write-Host ""
@@ -460,16 +380,12 @@ function Util-Uptime {
     Write-Host "  Uptime total    : $($uptime.Days) dias, $($uptime.Hours) horas, $($uptime.Minutes) minutos"
     Write-Host ""
     
-    # Contar reinicios recientes (últimos 30 días)
     try {
         $eventos = Get-WinEvent -FilterHashtable @{LogName='System'; ID=6005,6006,6009; StartTime=(Get-Date).AddDays(-30)} -ErrorAction SilentlyContinue
         $reinicios = ($eventos | Where-Object { $_.Id -eq 6005 -or $_.Id -eq 6009 }).Count
         Write-Host "[ESTADISTICAS]" -ForegroundColor Yellow
         Write-Host "  Reinicios (30 dias) : $reinicios"
-    } catch {
-        Write-Host "[ESTADISTICAS]" -ForegroundColor Yellow
-        Write-Host "  No se pudo obtener historial de reinicios" -ForegroundColor Gray
-    }
+    } catch { }
     Write-Host ""
     Pause-Kit
 }
@@ -518,105 +434,14 @@ function Util-UsuarioActivo {
     Write-Host "[SESION]" -ForegroundColor Yellow
     Write-Host "  Dominio            : $($env:USERDOMAIN)"
     Write-Host "  Equipo             : $($env:COMPUTERNAME)"
-    Write-Host "  Inicio de sesion   : $((Get-CimInstance Win32_OperatingSystem).LastBootUpTime.ToString('dd/MM/yyyy HH:mm:ss'))"
+    Write-Host "  Inicio de sesion   : $((Get-SistemaInfo).LastBootUpTime.ToString('dd/MM/yyyy HH:mm:ss'))"
     Write-Host ""
     
-    # Verificar si es administrador
     $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
     $isAdmin = $currentUser.Groups -match 'S-1-5-32-544'
     
     Write-Host "[PERMISOS]" -ForegroundColor Yellow
     Write-Host "  Es administrador   : $(if ($isAdmin) { 'Si' } else { 'No' })" -ForegroundColor $(if ($isAdmin) { 'Green' } else { 'Yellow' })
-    Write-Host ""
-    Pause-Kit
-}
-
-function Util-EstadoSeguridad {
-    Clear-Host
-    Write-Host "Estado de Seguridad del Sistema" -ForegroundColor Cyan
-    Write-Host "===============================" -ForegroundColor Cyan
-    Write-Host ""
-    
-    # Windows Defender
-    Write-Host "[WINDOWS DEFENDER]" -ForegroundColor Yellow
-    try {
-        $defender = Get-MpComputerStatus -ErrorAction Stop
-        Write-Host "  Estado              : $(if ($defender.AntivirusEnabled) { 'ACTIVADO' } else { 'DESACTIVADO' })" -ForegroundColor $(if ($defender.AntivirusEnabled) { 'Green' } else { 'Red' })
-        Write-Host "  Antispyware         : $(if ($defender.AntispywareEnabled) { 'ACTIVADO' } else { 'DESACTIVADO' })" -ForegroundColor $(if ($defender.AntispywareEnabled) { 'Green' } else { 'Red' })
-        Write-Host "  Ultima actualizacion: $($defender.AntivirusSignatureLastUpdated.ToString('dd/MM/yyyy HH:mm'))"
-    } catch {
-        Write-Host "  No se pudo obtener informacion de Windows Defender" -ForegroundColor Red
-    }
-    Write-Host ""
-    
-    # Firewall
-    Write-Host "[FIREWALL DE WINDOWS]" -ForegroundColor Yellow
-    try {
-        $firewall = Get-NetFirewallProfile -ErrorAction Stop
-        foreach ($profile in $firewall) {
-            $estado = if ($profile.Enabled) { "ACTIVADO" } else { "DESACTIVADO" }
-            Write-Host "  Perfil $($profile.Name.PadRight(10)): $estado" -ForegroundColor $(if ($profile.Enabled) { 'Green' } else { 'Red' })
-        }
-    } catch {
-        Write-Host "  No se pudo obtener informacion del Firewall" -ForegroundColor Red
-    }
-    Write-Host ""
-    
-    # UAC
-    Write-Host "[CONTROL DE CUENTAS DE USUARIO (UAC)]" -ForegroundColor Yellow
-    try {
-        $uac = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name "EnableLUA" -ErrorAction Stop
-        $uacStatus = if ($uac.EnableLUA -eq 1) { "ACTIVADO" } else { "DESACTIVADO" }
-        Write-Host "  Estado              : $uacStatus" -ForegroundColor $(if ($uac.EnableLUA -eq 1) { 'Green' } else { 'Red' })
-    } catch {
-        Write-Host "  No se pudo obtener informacion de UAC" -ForegroundColor Red
-    }
-    Write-Host ""
-    Pause-Kit
-}
-
-function Util-ConteoBSOD {
-    Clear-Host
-    Write-Host "Conteo de BSOD y Errores Criticos" -ForegroundColor Cyan
-    Write-Host "==================================" -ForegroundColor Cyan
-    Write-Host ""
-    
-    Write-Host "[BUSQUEDA DE BSOD (Ultimos 90 dias)]" -ForegroundColor Yellow
-    
-    try {
-        $fechaInicio = (Get-Date).AddDays(-90)
-        
-        # Buscar eventos de bugcheck (BSOD)
-        $bsods = Get-WinEvent -FilterHashtable @{
-            LogName = 'System'
-            ID = 1001
-            ProviderName = 'Microsoft-Windows-WER-SystemErrorReporting'
-            StartTime = $fechaInicio
-        } -ErrorAction SilentlyContinue
-        
-        if ($bsods) {
-            Write-Host "  BSODs encontrados   : $($bsods.Count)" -ForegroundColor Red
-            Write-Host ""
-            Write-Host "  Ultimos 5 BSODs:" -ForegroundColor Yellow
-            $bsods | Select-Object -First 5 | ForEach-Object {
-                Write-Host "    $($_.TimeCreated.ToString('dd/MM/yyyy HH:mm')) - $($_.Message.Substring(0, [Math]::Min(80, $_.Message.Length)))..." -ForegroundColor Gray
-            }
-        } else {
-            Write-Host "  BSODs encontrados   : 0" -ForegroundColor Green
-            Write-Host "  Estado              : Sistema estable" -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "  No se pudo obtener informacion de BSODs" -ForegroundColor Yellow
-    }
-    
-    Write-Host ""
-    Write-Host "[ERRORES CRITICOS DEL SISTEMA]" -ForegroundColor Yellow
-    try {
-        $errores = Get-EventLog -LogName System -EntryType Error -After $fechaInicio -ErrorAction SilentlyContinue
-        Write-Host "  Errores (90 dias)   : $($errores.Count)" -ForegroundColor $(if ($errores.Count -gt 50) { 'Red' } elseif ($errores.Count -gt 20) { 'Yellow' } else { 'Green' })
-    } catch {
-        Write-Host "  No se pudo obtener conteo de errores" -ForegroundColor Red
-    }
     Write-Host ""
     Pause-Kit
 }
@@ -628,14 +453,12 @@ function Util-DashboardRapido {
     Write-Host "╚═══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
     
-    # CPU
     $cpu = Get-CPUInfo
     $cpuLoad = $cpu.LoadPercentage
     $cpuColor = if ($cpuLoad -gt 80) { 'Red' } elseif ($cpuLoad -gt 50) { 'Yellow' } else { 'Green' }
     Write-Host "  CPU Usage     : " -NoNewline
     Write-Host "$cpuLoad%" -ForegroundColor $cpuColor
     
-    # RAM
     $os = Get-SistemaInfo
     $totalRAM = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
     $freeRAM = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
@@ -645,7 +468,6 @@ function Util-DashboardRapido {
     Write-Host "  RAM Usage     : " -NoNewline
     Write-Host "$usedRAM GB / $totalRAM GB ($ramPercent%)" -ForegroundColor $ramColor
     
-    # Disco C:
     $discoC = Get-Volume -DriveLetter C -ErrorAction SilentlyContinue
     if ($discoC) {
         $discoTotal = [math]::Round($discoC.Size / 1GB, 2)
@@ -657,24 +479,17 @@ function Util-DashboardRapido {
         Write-Host "$discoUsado GB / $discoTotal GB ($discoPercent%)" -ForegroundColor $discoColor
     }
     
-    # Uptime
     $uptime = (Get-Date) - $os.LastBootUpTime
     Write-Host "  Uptime        : " -NoNewline
     Write-Host "$($uptime.Days)d $($uptime.Hours)h $($uptime.Minutes)m" -ForegroundColor Cyan
     
-    # Procesos
     $totalProcesos = (Get-Process).Count
     Write-Host "  Procesos      : " -NoNewline
     Write-Host "$totalProcesos activos" -ForegroundColor White
     
-    # Red (test rápido)
     Write-Host "  Internet      : " -NoNewline
     $internetOK = Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet -ErrorAction SilentlyContinue
-    if ($internetOK) {
-        Write-Host "CONECTADO" -ForegroundColor Green
-    } else {
-        Write-Host "DESCONECTADO" -ForegroundColor Red
-    }
+    if ($internetOK) { Write-Host "CONECTADO" -ForegroundColor Green } else { Write-Host "DESCONECTADO" -ForegroundColor Red }
     
     Write-Host ""
     Write-Host "╔═══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
@@ -685,7 +500,7 @@ function Util-DashboardRapido {
 }
 
 # ============================================================
-# SUBMENU ACTUALIZADO
+# SUBMENU DE UTILIDADES (RENUMERADO Y LIMPIO: 18 OPCIONES)
 # ============================================================
 
 function SubMenu-Utilidades {
@@ -706,14 +521,11 @@ function SubMenu-Utilidades {
         Write-Host " 11 - Placa base y BIOS/UEFI"
         Write-Host " 12 - Identidad del sistema"
         Write-Host " 13 - Deteccion de virtualizacion"
-        Write-Host " 14 - Estado de Secure Boot"
-        Write-Host " 15 - Tipo de disco (HDD/SSD/NVMe)"
-        Write-Host " 16 - Uptime del sistema"
-        Write-Host " 17 - Tipo de equipo (Laptop/Desktop)"
-        Write-Host " 18 - Informacion del usuario activo"
-        Write-Host " 19 - Estado de seguridad (Defender/Firewall/UAC)"
-        Write-Host " 20 - Conteo de BSOD y errores criticos"
-        Write-Host " 21 - DASHBOARD RAPIDO (vista completa)"
+        Write-Host " 14 - Tipo de disco (HDD/SSD/NVMe)"
+        Write-Host " 15 - Uptime del sistema"
+        Write-Host " 16 - Tipo de equipo (Laptop/Desktop)"
+        Write-Host " 17 - Informacion del usuario activo"
+        Write-Host " 18 - DASHBOARD RAPIDO (vista completa)"
         Write-Host " 0  - Volver al menu principal"
         Write-Host ""
         $opcion = Read-Host "Selecciona una opcion"
@@ -731,14 +543,11 @@ function SubMenu-Utilidades {
             "11" { Util-PlacaBaseBIOS }
             "12" { Util-IdentidadSistema }
             "13" { Util-DetectarVirtualizacion }
-            "14" { Util-SecureBoot }
-            "15" { Util-TipoDisco }
-            "16" { Util-Uptime }
-            "17" { Util-TipoEquipo }
-            "18" { Util-UsuarioActivo }
-            "19" { Util-EstadoSeguridad }
-            "20" { Util-ConteoBSOD }
-            "21" { Util-DashboardRapido }
+            "14" { Util-TipoDisco }
+            "15" { Util-Uptime }
+            "16" { Util-TipoEquipo }
+            "17" { Util-UsuarioActivo }
+            "18" { Util-DashboardRapido }
             "0" { return }
             default { Write-Host "Opcion invalida." -ForegroundColor Red; Start-Sleep -Seconds 1 }
         }

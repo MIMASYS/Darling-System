@@ -19,12 +19,11 @@ function Confirmar-Accion {
     if ($respuesta -in @('s', 'S', 'si', 'Si', 'SI')) { return $true }
     return $false
 }
-
 function Mostrar-Header {
     Clear-Host
     Write-Host "=========================================" -ForegroundColor Magenta
-    Write-Host "            DARLING SYSTEM" -ForegroundColor Magenta
-    Write-Host "        Version CherryRed Flavor 4.1" -ForegroundColor Magenta
+    Write-Host "            ❤ DARLING SYSTEM ❤" -ForegroundColor Magenta
+    Write-Host "        Version CherryRed Flavor 4.2" -ForegroundColor Magenta
     Write-Host "=========================================" -ForegroundColor Magenta
     Write-Host "           Dirty and dummy system" -ForegroundColor Magenta
     Write-Host "          Created by: MIMASYS. Chu." -ForegroundColor Magenta
