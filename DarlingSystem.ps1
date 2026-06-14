@@ -1,6 +1,6 @@
 ﻿# ============================================================
 # DARLING SYSTEM - Script Principal
-# Version 4.0 - Modular
+# Version 4.1 - Modular
 # ============================================================
 
 # Forzar codificacion UTF-8
@@ -102,6 +102,7 @@ while ($true) {
         "11" { SubMenu-Winget }
         "12" { Generar-ReporteHTML }
         "13" { Generar-Reporte }
+        "777" { Mostrar-ASCII-Art }        
         "0" {
             Clear-Host
             Write-Host "Saliendo de Darling System. Hasta luego!" -ForegroundColor Green
