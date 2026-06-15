@@ -1,6 +1,6 @@
 ﻿# ============================================================
 # DARLING SYSTEM - Script Principal
-# Version 4.1 - Modular
+# Version 4.2 - Modular
 # ============================================================
 
 # Forzar codificacion UTF-8

@@ -2,7 +2,7 @@
 # MODULO 00: FUNCIONES CORE Y AUXILIARES
 # ============================================================
 
-$Script:VersionActual = "4.1"
+$Script:VersionActual = "4.2"
 $Script:VersionURL = "https://raw.githubusercontent.com/MIMASYS/Darling-System/main/version.txt"
 $Script:ReleasesURL = "https://github.com/MIMASYS/Darling-System/releases"
 
